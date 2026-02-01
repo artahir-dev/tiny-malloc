@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <stdio.h>
 
+// Memory layout: [ Block | User Data ]
+// Linked list: global_base -> Block1 -> Block2 -> ...
+
 // Structure to hold metadata for each memory block
 // We use a linked list to keep track of allocated and free blocks
 typedef struct Block {
@@ -12,9 +15,9 @@ typedef struct Block {
     struct Block *next; // Pointer to the next block in the list
 } Block;
 
-#define BLOCK_SIZE sizeof(Block)
+#define BLOCK_SIZE sizeof(Block)  // 24 bytes on 64-bit systems | 8 (size_t) + 4 (int) + 4 (padding) + 8 (pointer)
 
-void *global_base = NULL;
+void *global_base = NULL;  // Head of the linked list
 
 // Find a free block that fits the requested size (First Fit strategy)
 Block *find_free_block(Block **last, size_t size) {
@@ -49,7 +52,7 @@ void *tiny_malloc(size_t size) {
 
     if (size <= 0) return NULL;
 
-    // Align size to 8 bytes for performance and hardware requirements
+    // Round `size` up to next multiple of 8 for proper 64-bit memory alignment
     size = (size + 7) & ~7;
 
     if (!global_base) { // First call
